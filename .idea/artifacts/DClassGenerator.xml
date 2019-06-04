@@ -1,0 +1,10 @@
+<component name="ArtifactManager">
+  <artifact type="javafx" name="DClassGenerator">
+    <output-path>$PROJECT_DIR$/out/artifacts/DClassGenerator</output-path>
+    <root id="root">
+      <element id="archive" name="DClassGenerator.jar">
+        <element id="module-output" name="DClassGenerator" />
+      </element>
+    </root>
+  </artifact>
+</component>
