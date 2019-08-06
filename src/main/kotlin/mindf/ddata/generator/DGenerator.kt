@@ -4,8 +4,8 @@ import mindf.utils.Bat
 import mindf.utils.Tools
 import java.io.File
 
-class DGenerator(databaseScript: File, directory: File, onEnd: (() -> Unit)?) {
-    constructor(databaseScript: File, directory: File) : this(databaseScript, directory, null)
+class DGenerator(databaseScript: File, directory: File, packageText: String, onEnd: (() -> Unit)?) {
+    constructor(databaseScript: File, directory: File, packageText: String) : this(databaseScript, directory, "", null)
 
     private val INT = "INT"
     private val DOUBLE = "DOUBLE"
@@ -27,19 +27,45 @@ class DGenerator(databaseScript: File, directory: File, onEnd: (() -> Unit)?) {
     private val VAR = "$DDATA var "
     private val EQUAL_NULL = "? = null"
     private val LATE_INIT = "$DDATA lateinit var "
-    private val modelContent = "package models\n\nimport utils.dbrokers.models.ddata\nimport utils.dbrokers.models.DModel\n"
-    private var controllerContent = "package controllers.controllers\n\nimport org.json.JSONObject\n\nclass "
-    private var facadeContent = "package controllers\n\nimport controllers.controllers.*\nimport models.*\n\nclass Facade {\n\n"
-    private var brokerContent = "package controllers.broker\n\n"
+    private var modelContent = ""
+    private var controllerContent = ""
+    private var facadeContent = ""
+    private var brokerContent = ""
     private val listTable = mutableMapOf<String, MutableList<Pair<String, String>>>()
     private var path = directory.path + "\\generateDData"
+    private var importContent = "import "
+    private var packageContent = "package "
 
     init {
+        updatePaths(packageText)
         createOrReplaceMainDirectory()
         createSubDirectories()
         generateDDataFromScript(databaseScript)
         createFiles()
         onEnd?.invoke()
+    }
+
+    private fun updatePaths(packageText: String) {
+        if (packageText != "") {
+            if (packageText[packageText.length - 1] == '.') {
+                packageContent += packageText
+                importContent += packageText
+            } else {
+                packageContent += "$packageText."
+                importContent += "$packageText."
+            }
+            modelContent = packageContent + "models\n\n" + importContent + "utils.dbrokers.models.ddata\n" +
+                    importContent + "utils.dbrokers.models.DModel\n\n"
+            controllerContent = packageContent + "controllers.controllers\n\nimport org.json.JSONObject\n"
+            facadeContent = packageContent + "controllers\n\n" + importContent + "controllers.controllers.*\n" +
+                    importContent + "models.*\n\nclass Facade {\n\n"
+            brokerContent = packageContent + "controllers.broker\n\n"
+        } else {
+            modelContent = "package models\n\nimport utils.dbrokers.models.ddata\nimport utils.dbrokers.models.DModel\n"
+            controllerContent = "package controllers.controllers\n\nimport org.json.JSONObject\n"
+            facadeContent = "package controllers\n\nimport controllers.controllers.*\nimport models.*\n\nclass Facade {\n\n"
+            brokerContent = "package controllers.broker\n\n"
+        }
     }
 
     private fun createSubDirectories() {
@@ -96,10 +122,10 @@ class DGenerator(databaseScript: File, directory: File, onEnd: (() -> Unit)?) {
         listTable.forEach { element ->
             val key = element.key
             var content = controllerContent
-            content += "import controllers.brokers." + key + "Broker\n"
-            content += "import models.$key\n"
-            content += "import utils.views.Tools.Companion.jsonToModel\n" //todo refactor to jitpack
-            content += "import mindf.ddata.controllers.Facade\n\n" //todo refactor to jitpack
+            content += importContent + "controllers.brokers." + key + "Broker\n"
+            content += importContent + "models.$key\n"
+            content += importContent + "utils.views.Tools.Companion.jsonToModel\n" //todo refactor to jitpack
+            content += importContent + "mindf.ddata.controllers.Facade\n\n" //todo refactor to jitpack
             content += "class " + key + "Controllers(override val modelClass: Class<" + key + ">) : Facade() {\n\n"
             content += "    internal val broker = $key(this)\n"
             content += "    internal val list: MutableList<$key> = mutableListOf()\n\n"
@@ -113,8 +139,8 @@ class DGenerator(databaseScript: File, directory: File, onEnd: (() -> Unit)?) {
         listTable.forEach { element ->
             val key = element.key
             var content = brokerContent
-            content += "import controllers.controllers." + key + "Controller\n"
-            content += "import mindf.ddata.controllers.Broker\n\n" //todo change this from jitpack version
+            content += importContent + "controllers.controllers." + key + "Controller\n"
+            content += importContent + "mindf.ddata.controllers.Broker\n\n" //todo change this from jitpack version
             content += "class " + key +"Broker(override val controller: " + key + "Controller) : Broker()"
             Bat.createFile(path + "\\controllers\\brokers\\" + element.key + "Broker.kt", content)
         }
