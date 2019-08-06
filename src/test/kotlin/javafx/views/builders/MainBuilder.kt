@@ -2,6 +2,7 @@ package javafx.views.builders
 
 import javafx.application.Platform
 import javafx.geometry.Pos
+import javafx.scene.control.TextField
 import javafx.scene.layout.BorderPane
 import javafx.scene.paint.Color
 import mindf.ddata.generator.DGenerator
@@ -17,8 +18,10 @@ import java.io.File
 class MainBuilder : View() {
 
     override val root = BorderPane()
+    private lateinit var packageText: TextField
     private lateinit var script: File
     private lateinit var directory: File
+    private lateinit var packagePath: String
 
     init {
         with(root) {
@@ -54,6 +57,7 @@ class MainBuilder : View() {
                     paddingAll = 16
                     form {
                         fieldset {
+                            //field("Package path")//todo add this on need
                             field("Select the creation directory") {
                                 button("Directory") {
                                     action {
@@ -77,6 +81,11 @@ class MainBuilder : View() {
                                     }
                                 }
                             }
+                            field("Optional package name") {
+                                packageText = textfield {
+                                    promptText = "package"
+                                }
+                            }
                             field("Execute generation") {
                                 button("run") {
                                     action {
@@ -86,7 +95,7 @@ class MainBuilder : View() {
                                             if (!::script.isInitialized) {
                                                 Toast.makeText(primaryStage, "No script selected!")
                                             } else {
-                                                DGenerator(script, directory) {
+                                                DGenerator(script, directory, packageText.text) {
                                                     wait(
                                                         { Platform.runLater { Toast.makeText(primaryStage, "Data are generated!", Color.GREEN) } }
                                                         , 2000
