@@ -47,7 +47,7 @@ class DGenerator(databaseScript: File, directory: File, onEnd: (() -> Unit)?) {
         File("$path\\controllers\\controllers").mkdir()
         File("$path\\controllers\\brokers").mkdir()
         File("$path\\views").mkdir()
-        File("$path\\views\\models").mkdir()
+        File("$path\\models").mkdir()
     }
 
     private fun createOrReplaceMainDirectory() {
@@ -89,32 +89,34 @@ class DGenerator(databaseScript: File, directory: File, onEnd: (() -> Unit)?) {
             facadeContent += tab + "internal val " + key.toLowerCase() +"Controller = " + key + "Controller(" + key + "::class::java)\n"
         }
         facadeContent += "\n    init {\n        \n    }\n}"
-        Bat.createFile("$path\\views\\Facade.kt", facadeContent)
+        Bat.createFile("$path\\controllers\\Facade.kt", facadeContent)
     }
 
     private fun createControllersContent() {
         listTable.forEach { element ->
             val key = element.key
-            controllerContent += "import controllers.brokers." + key + "Broker\n"
-            controllerContent += "import models.$key\n"
-            controllerContent += "import utils.views.Tools.Companion.jsonToModel\n" //todo refactor to jitpack
-            controllerContent += "import mindf.ddata.controllers.Facade\n\n" //todo refactor to jitpack
-            controllerContent += "class " + key + "Controllers(override val modelClass: Class<" + key + ">) : Facade() {\n\n"
-            controllerContent += "    internal val broker = $key(this)\n"
-            controllerContent += "    internal val list: MutableList<$key> = mutableListOf()\n\n"
-            controllerContent += "    override fun initList(jsonObjects: MutableList<JSONObject) {\n"
-            controllerContent += "        list = jsonToModel(jsonObjects, modelClass) as MutableList<$key>\n    }\n}"
-            Bat.createFile(path + "\\controllers\\controllers\\" + element.key + "Controller.kt", brokerContent)
+            var content = controllerContent
+            content += "import controllers.brokers." + key + "Broker\n"
+            content += "import models.$key\n"
+            content += "import utils.views.Tools.Companion.jsonToModel\n" //todo refactor to jitpack
+            content += "import mindf.ddata.controllers.Facade\n\n" //todo refactor to jitpack
+            content += "class " + key + "Controllers(override val modelClass: Class<" + key + ">) : Facade() {\n\n"
+            content += "    internal val broker = $key(this)\n"
+            content += "    internal val list: MutableList<$key> = mutableListOf()\n\n"
+            content += "    override fun initList(jsonObjects: MutableList<JSONObject) {\n"
+            content += "        list = jsonToModel(jsonObjects, modelClass) as MutableList<$key>\n    }\n}"
+            Bat.createFile(path + "\\controllers\\controllers\\" + element.key + "Controller.kt", content)
         }
     }
 
     private fun createBrokerContent() {
         listTable.forEach { element ->
             val key = element.key
-            brokerContent += "import controllers.controllers." + key + "Controller\n"
-            brokerContent += "import mindf.ddata.controllers.Broker\n\n" //todo change this from jitpack version
-            brokerContent += "class " + key +"Broker(override val controller: " + key + "Controller) : Broker()"
-            Bat.createFile(path + "\\controllers\\brokers\\" + element.key + "Broker.kt", brokerContent)
+            var content = brokerContent
+            content += "import controllers.controllers." + key + "Controller\n"
+            content += "import mindf.ddata.controllers.Broker\n\n" //todo change this from jitpack version
+            content += "class " + key +"Broker(override val controller: " + key + "Controller) : Broker()"
+            Bat.createFile(path + "\\controllers\\brokers\\" + element.key + "Broker.kt", content)
         }
     }
 
@@ -163,7 +165,7 @@ class DGenerator(databaseScript: File, directory: File, onEnd: (() -> Unit)?) {
                     else -> VAR + values + EQUAL_NULL + NL
                 }
             }
-            Bat.createFile(path + "\\views\\models\\" + element.key + ".kt", "$content}")
+            Bat.createFile(path + "\\models\\" + element.key + ".kt", "$content}")
         }
     }
 
