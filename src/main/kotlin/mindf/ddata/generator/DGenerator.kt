@@ -61,12 +61,12 @@ class DGenerator(databaseScript: File, directory: File, packageText: String, onE
             controllerContent = packageContent + "controllers.controllers\n\nimport org.json.JSONObject\n"
             facadeContent = packageContent + "controllers\n\n" + importContent + "controllers.controllers.*\n" +
                     importContent + "models.*\n\nclass Facade {\n\n"
-            brokerContent = packageContent + "controllers.broker\n\n"
+            brokerContent = packageContent + "controllers.brokers\n\n"
         } else {
             modelContent = "package models\n\nimport model.DData\nimport model.DModel\n"
             controllerContent = "package controllers.controllers\n\nimport org.json.JSONObject\n"
             facadeContent = "package controllers\n\nimport controllers.controllers.*\nimport models.*\n\nclass Facade {\n\n"
-            brokerContent = "package controllers.broker\n\n"
+            brokerContent = "package controllers.brokers\n\n"
         }
     }
 
@@ -76,6 +76,7 @@ class DGenerator(databaseScript: File, directory: File, packageText: String, onE
         File("$path\\controllers\\brokers").mkdir()
         File("$path\\views").mkdir()
         File("$path\\models").mkdir()
+        File("$path\\0_dependencies").mkdir()
     }
 
     private fun createOrReplaceMainDirectory() {
@@ -104,17 +105,22 @@ class DGenerator(databaseScript: File, directory: File, packageText: String, onE
     }
 
     private fun createFiles() {
+        createDependenciesContent()
         createModelsContent()
         createControllersContent()
         createBrokerContent()
         createFacadeContent()
     }
 
+    private fun createDependenciesContent() {
+        Bat.createFile("$path\\0_dependencies\\dependencies.txt", "https://jitpack.io/#MindFlare56/DData\n\nimplementation 'com.github.MindFlare56:DData:1.0.0'")
+    }
+
     private fun createFacadeContent() {
         listTable.forEach { element ->
             val key = element.key
             val tab = "    "
-            facadeContent += tab + "internal val " + key.toLowerCase() +"Controller = " + key + "Controller(" + key + "::class::java)\n"
+            facadeContent += tab + "internal val " + key.toLowerCase() +"Controller = " + key + "Controller(" + key + "::class.java)\n"
         }
         facadeContent += "\n    init {\n        \n    }\n}"
         Bat.createFile("$path\\controllers\\Facade.kt", facadeContent)
@@ -128,10 +134,10 @@ class DGenerator(databaseScript: File, directory: File, packageText: String, onE
             content += importContent + "models.$key\n"
             content += "import utils.Tools.Companion.jsonToModel\n"
             content += "import controllers.Facade\n\n"
-            content += "class " + key + "Controllers(override val modelClass: Class<" + key + ">) : Facade() {\n\n"
-            content += "    internal val broker = $key(this)\n"
-            content += "    internal val list: MutableList<$key> = mutableListOf()\n\n"
-            content += "    override fun initList(jsonObjects: MutableList<JSONObject) {\n"
+            content += "class " + key + "Controller(override val modelClass: Class<" + key + ">) : Facade() {\n\n"
+            content += "    internal val broker = " + key + "Broker(this)\n"
+            content += "    internal var list: MutableList<$key> = mutableListOf()\n\n"
+            content += "    override fun initList(jsonObjects: MutableList<JSONObject>) {\n"
             content += "        list = jsonToModel(jsonObjects, modelClass) as MutableList<$key>\n    }\n}"
             Bat.createFile(path + "\\controllers\\controllers\\" + element.key + "Controller.kt", content)
         }
