@@ -45,6 +45,9 @@ class DGenerator(databaseScript: File, directory: File, packageText: String, onE
         onEnd?.invoke()
     }
 
+    //import model.DData
+    //import model.DModel
+
     private fun updatePaths(packageText: String) {
         if (packageText != "") {
             if (packageText[packageText.length - 1] == '.') {
@@ -54,14 +57,13 @@ class DGenerator(databaseScript: File, directory: File, packageText: String, onE
                 packageContent += "$packageText."
                 importContent += "$packageText."
             }
-            modelContent = packageContent + "models\n\n" + importContent + "utils.dbrokers.models.ddata\n" +
-                    importContent + "utils.dbrokers.models.DModel\n\n"
+            modelContent = packageContent + "models\n\nimport model.DModel\nimport model.DData\n"
             controllerContent = packageContent + "controllers.controllers\n\nimport org.json.JSONObject\n"
             facadeContent = packageContent + "controllers\n\n" + importContent + "controllers.controllers.*\n" +
                     importContent + "models.*\n\nclass Facade {\n\n"
             brokerContent = packageContent + "controllers.broker\n\n"
         } else {
-            modelContent = "package models\n\nimport utils.dbrokers.models.ddata\nimport utils.dbrokers.models.DModel\n"
+            modelContent = "package models\n\nimport model.DData\nimport model.DModel\n"
             controllerContent = "package controllers.controllers\n\nimport org.json.JSONObject\n"
             facadeContent = "package controllers\n\nimport controllers.controllers.*\nimport models.*\n\nclass Facade {\n\n"
             brokerContent = "package controllers.broker\n\n"
@@ -124,8 +126,8 @@ class DGenerator(databaseScript: File, directory: File, packageText: String, onE
             var content = controllerContent
             content += importContent + "controllers.brokers." + key + "Broker\n"
             content += importContent + "models.$key\n"
-            content += importContent + "utils.views.Tools.Companion.jsonToModel\n" //todo refactor to jitpack
-            content += importContent + "mindf.ddata.controllers.Facade\n\n" //todo refactor to jitpack
+            content += "import utils.Tools.Companion.jsonToModel\n"
+            content += "import controllers.Facade\n\n"
             content += "class " + key + "Controllers(override val modelClass: Class<" + key + ">) : Facade() {\n\n"
             content += "    internal val broker = $key(this)\n"
             content += "    internal val list: MutableList<$key> = mutableListOf()\n\n"
@@ -140,7 +142,7 @@ class DGenerator(databaseScript: File, directory: File, packageText: String, onE
             val key = element.key
             var content = brokerContent
             content += importContent + "controllers.controllers." + key + "Controller\n"
-            content += importContent + "mindf.ddata.controllers.Broker\n\n" //todo change this from jitpack version
+            content += "import controllers.Broker\n\n"
             content += "class " + key +"Broker(override val controller: " + key + "Controller) : Broker()"
             Bat.createFile(path + "\\controllers\\brokers\\" + element.key + "Broker.kt", content)
         }
@@ -182,7 +184,7 @@ class DGenerator(databaseScript: File, directory: File, packageText: String, onE
 
     private fun createModelsContent() {
         listTable.forEach { element ->
-            var content = modelContent
+            var content = "$modelContent\n@DModel @DData class "
             content += element.key + " {\n\n"
             element.value.forEach { value ->
                 val values = value.first + DOUBLE_DOT + value.second
